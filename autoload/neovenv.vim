@@ -38,10 +38,10 @@ function! neovenv#GetDefaultNeovenvs()
       \ 'add_to_path': ['bin/python3', 'bin/pip3'],
       \ 'commands': {
         \ 'create': ['python3', '-m', 'venv', '.'],
-        \ 'install': ['{vpath}bin/pip', 'install'],
-        \ 'update': ['{vpath}bin/pip', 'install', '--upgrade'],
+        \ 'install': ['{vpath}bin/pip3', 'install'],
+        \ 'update': ['{vpath}bin/pip3', 'install', '--upgrade'],
         \ },
-      \ 'host_prog_target': 'bin/python',
+      \ 'host_prog_target': 'bin/python3',
       \ 'packages': [
         \ 'pip',
         \ 'pynvim',
