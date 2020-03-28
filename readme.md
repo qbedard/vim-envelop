@@ -2,7 +2,11 @@
 
 ## About
 
-Neovenv is a Neovim plugin for managing virtual environments.
+Neovenv is a [Neovim](https://github.com/neovim/neovim) plugin for managing virtual environments.
+
+## Compatibility
+
+At the moment, Neovenv is only compatible with Neovim.
 
 ## Install
 
@@ -54,12 +58,12 @@ let g:neovenvs = {
 
 ### Virtual Environment Management
 
-- `CreateVenvs` creates all environments.
-- `UpdateVenvs`  updates packages in environments.
-- `DestroyVenvs` destroys all environments (and binary links).
+- `CreateVenvs` Create all environments.
+- `UpdateVenvs`  Update packages in environments.
+- `DestroyVenvs` Destroy all environments (and binary links).
 
 ### $PATH Management
 
-- `LinkBins` links environment binaries.
-- `UnlinkVins` unlinks environment binaries.
-- `RelinkBins` unlinks environment binaries and creates fresh links.
+- `LinkBins` Link environment binaries.
+- `UnlinkVins` Unlink environment binaries.
+- `RelinkBins` Unlink environment binaries and create fresh links.
