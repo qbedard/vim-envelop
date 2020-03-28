@@ -13,16 +13,16 @@ let g:loaded_neovenv = 1
 "----------------------------------- Setup ------------------------------------"
 " get/set globals
 let g:neovenv_dir_name = get(g:, 'neovenv_dir_name', 'venv')
-let g:neovenv_path = get(g:, 'neovenv_path', stdpath('data') . '/' . g:neovenv_dir_name)
+let g:neovenv_path = get(
+  \ g:, 'neovenv_path', stdpath('data') . '/' . g:neovenv_dir_name
+  \ )
 let g:neovenv_add_to_path = get(g:, 'neovenv_add_to_path', 1)
+let g:neovenvs_enabled = get(g:, 'neovenvs_enabled', ['node', 'python3'])
 let g:neovenvs = get(g:, 'neovenvs', neovenv#GetDefaultNeovenvs())
-let g:neovenvs_enabled = get(g:, 'neovenv_enabled', [
-  \ 'node', 'python3',
-  \ ])
 
 " create venv dir if needed
 if !empty(g:neovenvs)
-  \ && !empty(g:neovenv_enabled)
+  \ && !empty(g:neovenvs_enabled)
   \ && !isdirectory(g:neovenv_path)
   call mkdir(g:neovenv_path, 'p')
 endif
