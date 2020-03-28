@@ -54,7 +54,7 @@ function! neovenv#GetDefaultNeovenvs()
   let l:active = {}  " enabled + available = active
   for [provider, settings] in items(l:defaults)
     " only set defaults for providers that are installed
-    if index(g:neovenv_enabled, provider) >= 0
+    if index(g:neovenvs_enabled, provider) >= 0
       \ && executable(provider)
       let l:active[provider] = settings
     endif
