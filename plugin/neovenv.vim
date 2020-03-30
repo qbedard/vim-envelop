@@ -44,4 +44,4 @@ command! DestroyVenvs call delete(g:neovenv_path, 'rf')
 " path commands
 command! LinkBins call neovenv#LinkBins()
 command! RelinkBins call neovenv#RelinkBins()
-command! UnlinkVins call neovenv#UnlinkBins()
+command! UnlinkBins call neovenv#UnlinkBins()
