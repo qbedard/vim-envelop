@@ -2,24 +2,24 @@
 
 ## About
 
-Neovenv is a [Neovim](https://github.com/neovim/neovim) plugin for managing virtual environments.
+envelop is a [Neovim](https://github.com/neovim/neovim) plugin for managing virtual environments.
 
 ## Compatibility
 
-At the moment, Neovenv is only compatible with Neovim.
+At the moment, envelop is only compatible with Neovim.
 
 ## Install
 
 Using [**vim-plug**](https://github.com/junegunn/vim-plug):
 
-`Plug 'timbedard/neovenv'`
+`Plug 'timbedard/envelop'`
 
 ## Options
 
 ### Example Venv Configuration
 
 ```vim
-let g:neovenvs = {
+let g:envelop_envs = {
   \ 'node': {
     \ 'commands': {
       \ 'create': ['npm', 'init', '-y'],
@@ -50,20 +50,20 @@ let g:neovenvs = {
 
 |Name|Default|Description|
 |-|-|-|
-|`g:neovenv_path`|`$XDG_DATA_HOME/venv`|where venvs are stored|
-|`g:neovenvs_enabled`|`['node', 'python3']`|which venvs to enable|
-|`g:neovenv_add_to_path`|`1`|whether to add binaries to path|
+|`g:envelop_path`|`$XDG_DATA_HOME/venv`|where venvs are stored|
+|`g:envelop_envs_enabled`|`['node', 'python3']`|which venvs to enable|
+|`g:envelop_add_to_path`|`1`|whether to add binaries to path|
 
 ## Commands
 
 ### Virtual Environment Management
 
-- `CreateVenvs` Create all environments.
-- `UpdateVenvs`  Update packages in environments.
-- `DestroyVenvs` Destroy all environments (and binary links).
+- `EnvelopCreate` Create all environments.
+- `EnvelopUpdate`  Update packages in environments.
+- `EnvelopDestroy` Destroy all environments (and binary links).
 
 ### $PATH Management
 
-- `LinkBins` Link environment binaries.
-- `UnlinkVins` Unlink environment binaries.
-- `RelinkBins` Unlink environment binaries and create fresh links.
+- `EnvelopLink` Link environment binaries.
+- `EnvelopUnlink` Unlink environment binaries.
+- `EnvelopRelink` Unlink environment binaries and create fresh links.

@@ -1,12 +1,12 @@
-" neovenv/autoload/neovenv.vim
+" envelop/autoload/envelop.vim
 "-----------------------------------------------------------------------------"
 "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    "
-"                                   Neovenv                                   "
+"                                   envelop                                   "
 "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    "
 "-----------------------------------------------------------------------------"
 
 "--------------------------------- Utilities ----------------------------------"
-function! neovenv#GetDefaultNeovenvs()
+function! envelop#GetDefaultEnvs()
 
   " stock venvs
   let l:defaults = {
@@ -54,7 +54,7 @@ function! neovenv#GetDefaultNeovenvs()
   let l:active = {}  " enabled + available = active
   for [provider, settings] in items(l:defaults)
     " only set defaults for providers that are installed
-    if index(g:neovenvs_enabled, provider) >= 0
+    if index(g:envelop_envs_enabled, provider) >= 0
       \ && executable(provider)
       let l:active[provider] = settings
     endif
@@ -65,13 +65,13 @@ endfunction
 
 
 function! s:get_venv_path(name)
-  return g:neovenv_path . '/' . a:name
+  return g:envelop_path . '/' . a:name
 endfunction
 
 
-function! s:get_neovenvs()
-  let l:neovenvs = g:neovenvs
-  for [name, settings] in items(l:neovenvs)
+function! s:get_envelop_envs()
+  let l:envelop_envs = g:envelop_envs
+  for [name, settings] in items(l:envelop_envs)
     let l:dir = s:get_venv_path(name)
     if has_key(settings, 'commands')
       for cmd in values(settings['commands'])
@@ -79,17 +79,17 @@ function! s:get_neovenvs()
       endfor
     endif
   endfor
-  return l:neovenvs
+  return l:envelop_envs
 endfunction
 
 
 "------------------------------ Venv Management -------------------------------"
-function! neovenv#CreateVenvs()
+function! envelop#CreateVenvs()
 
-  " get venv path-substitutted neovenvs dict
-  let l:neovenvs = s:get_neovenvs()
+  " get venv path-substitutted envelop_envs dict
+  let l:envelop_envs = s:get_envelop_envs()
 
-  for [name, settings] in items(l:neovenvs)
+  for [name, settings] in items(l:envelop_envs)
 
     " create dir
     let l:dir = s:get_venv_path(name)
@@ -124,19 +124,19 @@ function! neovenv#CreateVenvs()
   endfor
 
   " link bins
-  if g:neovenv_add_to_path && executable('ln')
-    call neovenv#LinkBins()
+  if g:envelop_add_to_path && executable('ln')
+    call envelop#LinkBins()
   endif
 
 endfunction
 
 
-function! neovenv#UpdateVenvs()
+function! envelop#UpdateVenvs()
 
-  " get venv path-substitutted neovenvs dict
-  let l:neovenvs = s:get_neovenvs()
+  " get venv path-substitutted envelop_envs dict
+  let l:envelop_envs = s:get_envelop_envs()
 
-  for [name, settings] in items(l:neovenvs)
+  for [name, settings] in items(l:envelop_envs)
     if has_key(settings, 'commands')
       \ && has_key(settings['commands'], 'update')
 
@@ -151,10 +151,10 @@ function! neovenv#UpdateVenvs()
 endfunction
 
 "------------------------------ Provider Globals ------------------------------"
-function! neovenv#SetHostProgGlobals()
-  for [name, settings] in items(g:neovenvs)
+function! envelop#SetHostProgGlobals()
+  for [name, settings] in items(g:envelop_envs)
     if has_key(settings, 'host_prog_target')
-      let l:target_path = 
+      let l:target_path =
         \ s:get_venv_path(name) . '/' . settings['host_prog_target']
       if filereadable(l:target_path)
         let l:host_prog_var = name . '_host_prog'
@@ -166,11 +166,11 @@ endfunction
 
 
 "----------------------------------- $PATH ------------------------------------"
-function! neovenv#LinkBins()
+function! envelop#LinkBins()
 
   " get targets to link
   let l:targets_to_link = []
-  for [name, settings] in items(g:neovenvs)
+  for [name, settings] in items(g:envelop_envs)
     if has_key(settings, 'add_to_path')
       for target in settings['add_to_path']
         let l:target_path = s:get_venv_path(name) . '/' . target
@@ -182,33 +182,33 @@ function! neovenv#LinkBins()
   endfor
 
   " create bin path if needed
-  let s:neovenv_bin_path = g:neovenv_path . '/bin'
-  if !isdirectory(s:neovenv_bin_path) && !empty(l:targets_to_link)
-    call mkdir(s:neovenv_bin_path, 'p')
+  let s:envelop_bin_path = g:envelop_path . '/bin'
+  if !isdirectory(s:envelop_bin_path) && !empty(l:targets_to_link)
+    call mkdir(s:envelop_bin_path, 'p')
   endif
 
   " link the targets into the bin path
   for target in l:targets_to_link
-    if !exists(s:neovenv_bin_path . split(target, '/')[-1])
+    if !exists(s:envelop_bin_path . split(target, '/')[-1])
       call system([
-        \ 'ln', '-s', target, s:neovenv_bin_path
+        \ 'ln', '-s', target, s:envelop_bin_path
         \ ])
     endif
   endfor
 
   " add the bin path to $PATH
-  let $PATH .= ':' . s:neovenv_bin_path
+  let $PATH .= ':' . s:envelop_bin_path
 
 endfunction
 
 
-function! neovenv#UnlinkBins()
-  let s:neovenv_bin_path = g:neovenv_path . '/bin'
-  call delete(s:neovenv_bin_path, 'rf')
+function! envelop#UnlinkBins()
+  let s:envelop_bin_path = g:envelop_path . '/bin'
+  call delete(s:envelop_bin_path, 'rf')
 endfunction
 
 
-function! neovenv#RelinkBins()
-  call neovenv#UnlinkBins()
-  call neovenv#LinkBins()
+function! envelop#RelinkBins()
+  call envelop#UnlinkBins()
+  call envelop#LinkBins()
 endfunction
