@@ -12,7 +12,7 @@ At the moment, envelop is only compatible with Neovim.
 
 Using [**vim-plug**](https://github.com/junegunn/vim-plug):
 
-`Plug 'timbedard/envelop'`
+`Plug 'timbedard/vim-envelop'`
 
 ## Options
 
