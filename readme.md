@@ -2,7 +2,7 @@
 
 ## About
 
-envelop is a [Neovim](https://github.com/neovim/neovim) plugin for managing virtual environments.
+**envelop** is a [Neovim](https://github.com/neovim/neovim) plugin for managing virtual environments.
 
 ## Compatibility
 
