@@ -8,7 +8,7 @@
 "--------------------------------- Utilities ----------------------------------"
 function! envelop#GetDefaultEnvs()
 
-  " stock venvs
+  " stock envs
   let l:defaults = {
     \ 'node': {
       \ 'commands': {
@@ -64,98 +64,179 @@ function! envelop#GetDefaultEnvs()
 endfunction
 
 
-function! s:get_venv_path(name)
+function! s:get_env_path(name)
   return g:envelop_path . '/' . a:name
 endfunction
 
 
-function! s:get_envelop_envs()
-  let l:envelop_envs = g:envelop_envs
-  for [name, settings] in items(l:envelop_envs)
-    let l:dir = s:get_venv_path(name)
-    if has_key(settings, 'commands')
-      for cmd in values(settings['commands'])
-        call map(cmd, "substitute(v:val, '{vpath}', l:dir . '/', 'g')")
-      endfor
-    endif
-  endfor
-  return l:envelop_envs
+function! s:get_bin_path()
+  return g:envelop_path . '/bin'
 endfunction
 
-
-"------------------------------ Venv Management -------------------------------"
-function! envelop#CreateVenvs()
-
-  " get venv path-substitutted envelop_envs dict
-  let l:envelop_envs = s:get_envelop_envs()
-
-  for [name, settings] in items(l:envelop_envs)
-
-    " create dir
-    let l:dir = s:get_venv_path(name)
-    call mkdir(l:dir, 'p')
-
-    if has_key(settings, 'commands')
-
-      " create venv
-      let l:create_jobs = []
-      if has_key(settings['commands'], 'create')
-        call add(l:create_jobs,
-          \ jobstart(
-            \ settings['commands']['create'],
-            \ {'cwd': l:dir}
-            \ )
-          \ )
-      endif
-
-      " TODO: refactor this to install nvim with callback instead
-      call jobwait(l:create_jobs)
-
-      " install packages
-      if has_key(settings['commands'], 'install')
-        \ && has_key(settings, 'packages')
-        let l:cmd = settings['commands']['install']
-        let l:cmd += settings['packages']
-        call jobstart(l:cmd, {'cwd': l:dir})
-      endif
-
-    endif
-
-  endfor
-
-  " link bins
-  if g:envelop_add_to_path && executable('ln')
-    call envelop#LinkBins()
+function! s:create_bin_dir()
+  let l:envelop_bin_path = s:get_bin_path()
+  if !isdirectory(l:envelop_bin_path)
+    call mkdir(l:envelop_bin_path, 'p')
   endif
-
 endfunction
 
 
-function! envelop#UpdateVenvs()
+function! s:sub_paths(name, settings)
+  let l:dir = s:get_env_path(a:name)
+  let l:settings = a:settings
+  if has_key(l:settings, 'commands')
+    for cmd in values(l:settings['commands'])
+      call map(cmd, "substitute(v:val, '{vpath}', l:dir . '/', 'g')")
+    endfor
+  endif
+  return l:settings
+endfunction
 
-  " get venv path-substitutted envelop_envs dict
-  let l:envelop_envs = s:get_envelop_envs()
+function! s:get_env_settings(name)
+  return s:sub_paths(a:name, g:envelop_envs[a:name])
+endfunction
 
-  for [name, settings] in items(l:envelop_envs)
-    if has_key(settings, 'commands')
-      \ && has_key(settings['commands'], 'update')
 
-      " update packages
-      let l:cmd = settings['commands']['update']
-      let l:cmd += settings['packages']
-      call jobstart(l:cmd, {'cwd': s:get_venv_path(name)})
+function! s:get_envelop_envs()
+  return map(copy(g:envelop_envs), 's:sub_paths(v:key, v:val)')
+endfunction
 
+
+let s:jobs = {}
+function! s:callback(job, code, event)
+  let l:job = s:jobs[a:job]
+  if a:code > 0
+    echo printf('Failed to %s %s', l:job['action'], l:job['name'])
+    return
+  endif
+  if l:job['action'] == 'create'
+    echo printf('Added %s', l:job['name'])
+    call s:install_packages(l:job['name'], l:job['settings'])
+  elseif l:job['action'] == 'install'
+    echo printf('Installed packages for %s', l:job['name'])
+    call s:link_bins(l:job['name'], l:job['settings'])
+  elseif l:job['action'] == 'update'
+    echo printf('Updated packages for %s', l:job['name'])
+  elseif l:job['action'] == 'link'
+    echo printf('Linked bins for %s', l:job['name'])
+  endif
+  unlet s:jobs[a:job]
+  if len(s:jobs) == 0
+    echo 'Envelop job complete'
+  endif
+endfunction
+
+
+function! s:create_env(name, settings)
+  if has_key(a:settings, 'commands')
+    \ && has_key(a:settings['commands'], 'create')
+    let l:dir = s:get_env_path(a:name)
+    if !isdirectory(l:dir)
+      call mkdir(l:dir, 'p')
+    endif
+    let l:job_id = jobstart(
+      \ a:settings['commands']['create'],
+      \ {'cwd': l:dir, 'on_exit': function('s:callback')},
+      \ )
+    let s:jobs[l:job_id] = {
+      \ 'action': 'create',
+      \ 'name': a:name,
+      \ 'settings': a:settings,
+      \ }
+  endif
+endfunction
+
+
+function! s:install_packages(name, settings)
+  if !has_key(a:settings, 'packages')
+    \ || !has_key(a:settings, 'commands')
+    \ || !has_key(a:settings['commands'], 'install')
+    return
+  endif
+  let l:cmd = a:settings['commands']['install'] + a:settings['packages']
+  let l:dir = s:get_env_path(a:name)
+  let l:job_id = jobstart(
+    \ l:cmd,
+    \ {'cwd': l:dir, 'on_exit': function('s:callback')}
+    \ )
+  let s:jobs[l:job_id] = {
+    \ 'action': 'install',
+    \ 'name': a:name,
+    \ 'settings': a:settings,
+    \ }
+endfunction
+
+
+function! s:update_packages(name, settings)
+  let l:settings = s:get_env_settings(a:name)
+  if !has_key(l:settings, 'packages')
+    \ || !has_key(l:settings, 'commands')
+    \ || !has_key(l:settings['commands'], 'update')
+    return
+  endif
+  let l:cmd = l:settings['commands']['update'] + l:settings['packages']
+  let l:dir = s:get_env_path(a:name)
+  let l:job_id = jobstart(
+    \ l:cmd,
+    \ {'cwd': l:dir, 'on_exit': function('s:callback')}
+    \ )
+  let s:jobs[l:job_id] = {
+    \ 'action': 'update',
+    \ 'name': a:name,
+    \ 'settings': a:settings,
+    \ }
+endfunction
+
+
+function! s:link_bins(name, settings)
+  if !has_key(a:settings, 'add_to_path') || !executable('ln')
+    return
+  endif
+  call s:create_bin_dir()
+  let l:envelop_bin_path = s:get_bin_path()
+  for src in a:settings['add_to_path']
+    let l:src = s:get_env_path(a:name) . '/' . src
+    let l:target = l:envelop_bin_path . '/' . split(src, '/')[-1]
+    if filereadable(l:src) && !filereadable(l:target)
+      let l:job_id = jobstart(
+        \ ['ln', '-s', l:src, l:target],
+        \ {'on_exit': function('s:callback')}
+        \ )
+      let s:jobs[l:job_id] = {
+        \ 'action': 'link',
+        \ 'name': a:name,
+        \ 'settings': a:settings,
+        \ }
     endif
   endfor
-
 endfunction
+
+
+"------------------------------ Env Management -------------------------------"
+function! envelop#CreateEnvs()
+  let l:envelop_envs = s:get_envelop_envs()
+  call map(l:envelop_envs, 's:create_env(v:key, v:val)')
+endfunction
+
+
+function! envelop#UpdateEnvs()
+  let l:envelop_envs = s:get_envelop_envs()
+  call map(l:envelop_envs, 's:update_packages(v:key, v:val)')
+endfunction
+
+
+function! envelop#DestroyEnvs()
+  call delete(g:envelop_path, 'rf')
+  echo 'Destroyed envelop envs'
+endfunction
+
 
 "------------------------------ Provider Globals ------------------------------"
 function! envelop#SetHostProgGlobals()
   for [name, settings] in items(g:envelop_envs)
     if has_key(settings, 'host_prog_target')
       let l:target_path =
-        \ s:get_venv_path(name) . '/' . settings['host_prog_target']
+        \ s:get_env_path(name) . '/' . settings['host_prog_target']
       if filereadable(l:target_path)
         let l:host_prog_var = name . '_host_prog'
         let g:[l:host_prog_var] = l:target_path
@@ -166,45 +247,21 @@ endfunction
 
 
 "----------------------------------- $PATH ------------------------------------"
+function! envelop#addBinsToPath()
+  call s:create_bin_dir()
+  let $PATH .= ':' . s:get_bin_path()
+endfunction
+
+
 function! envelop#LinkBins()
-
-  " get targets to link
-  let l:targets_to_link = []
-  for [name, settings] in items(g:envelop_envs)
-    if has_key(settings, 'add_to_path')
-      for target in settings['add_to_path']
-        let l:target_path = s:get_venv_path(name) . '/' . target
-        if filereadable(l:target_path)
-          let l:targets_to_link += [l:target_path]
-        endif
-      endfor
-    endif
-  endfor
-
-  " create bin path if needed
-  let s:envelop_bin_path = g:envelop_path . '/bin'
-  if !isdirectory(s:envelop_bin_path) && !empty(l:targets_to_link)
-    call mkdir(s:envelop_bin_path, 'p')
-  endif
-
-  " link the targets into the bin path
-  for target in l:targets_to_link
-    if !exists(s:envelop_bin_path . split(target, '/')[-1])
-      call system([
-        \ 'ln', '-s', target, s:envelop_bin_path
-        \ ])
-    endif
-  endfor
-
-  " add the bin path to $PATH
-  let $PATH .= ':' . s:envelop_bin_path
-
+  call s:create_bin_dir()
+  call map(s:get_envelop_envs(), 's:link_bins(v:key, v:val)')
 endfunction
 
 
 function! envelop#UnlinkBins()
-  let s:envelop_bin_path = g:envelop_path . '/bin'
-  call delete(s:envelop_bin_path, 'rf')
+  let l:envelop_bin_path = g:envelop_path . '/bin'
+  call delete(l:envelop_bin_path, 'rf')
 endfunction
 
 
