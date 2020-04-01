@@ -109,15 +109,15 @@ function! s:callback(job, code, event)
     echo printf('Failed to %s %s', l:job['action'], l:job['name'])
     return
   endif
-  if l:job['action'] == 'create'
+  if l:job['action'] ==# 'create'
     echo printf('Added %s', l:job['name'])
     call s:install_packages(l:job['name'], l:job['settings'])
-  elseif l:job['action'] == 'install'
+  elseif l:job['action'] ==# 'install'
     echo printf('Installed packages for %s', l:job['name'])
     call s:link_bins(l:job['name'], l:job['settings'])
-  elseif l:job['action'] == 'update'
+  elseif l:job['action'] ==# 'update'
     echo printf('Updated packages for %s', l:job['name'])
-  elseif l:job['action'] == 'link'
+  elseif l:job['action'] ==# 'link'
     echo printf('Linked bins for %s', l:job['name'])
   endif
   unlet s:jobs[a:job]
