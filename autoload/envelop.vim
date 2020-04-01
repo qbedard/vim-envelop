@@ -73,6 +73,7 @@ function! s:get_bin_path()
   return g:envelop_path . '/bin'
 endfunction
 
+
 function! s:create_bin_dir()
   let l:envelop_bin_path = s:get_bin_path()
   if !isdirectory(l:envelop_bin_path)
