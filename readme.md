@@ -32,13 +32,13 @@ let g:envelop_envs = {
       \ ],
     \ },
   \ 'python3': {
-    \ 'add_to_path': ['bin/python3', 'bin/pip3'],
     \ 'commands': {
       \ 'create': ['python3', '-m', 'venv', '.'],
       \ 'install': ['{vpath}bin/pip', 'install'],
       \ 'update': ['{vpath}bin/pip', 'install', '--upgrade'],
       \ },
     \ 'host_prog_target': 'bin/python',
+    \ 'link': ['bin/python3', 'bin/pip3'],
     \ 'packages': [
       \ 'pip',
       \ 'pynvim',
@@ -52,18 +52,18 @@ let g:envelop_envs = {
 |-|-|-|
 |`g:envelop_path`|`$XDG_DATA_HOME/venv`|where venvs are stored|
 |`g:envelop_envs_enabled`|`['node', 'python3']`|which venvs to enable|
-|`g:envelop_add_to_path`|`1`|whether to add binaries to path|
+|`g:envelop_link`|`1`|whether to add binaries to path|
 
 ## Commands
 
 ### Virtual Environment Management
 
-- `EnvelopCreate` Create all environments.
-- `EnvelopUpdate`  Update packages in environments.
-- `EnvelopDestroy` Destroy all environments (and binary links).
+- `EnvCreate` Create all environments.
+- `EnvUpdate`  Update packages in environments.
+- `EnvDestroy` Destroy all environments (and binary links).
 
 ### $PATH Management
 
-- `EnvelopLink` Link environment binaries.
-- `EnvelopUnlink` Unlink environment binaries.
-- `EnvelopRelink` Unlink environment binaries and create fresh links.
+- `EnvLink` Link environment binaries.
+- `EnvUnlink` Unlink environment binaries.
+- `EnvRelink` Unlink environment binaries and create fresh links.

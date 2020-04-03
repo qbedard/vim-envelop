@@ -22,26 +22,26 @@ function! envelop#GetDefaultEnvs() abort
         \ ],
       \ },
     \ 'python': {
-      \ 'add_to_path': ['bin/python', 'bin/pip'],
       \ 'commands': {
         \ 'create': ['virtualenv', '.'],
         \ 'install': ['{vpath}bin/pip', 'install'],
         \ 'update': ['{vpath}bin/pip', 'install', '--upgrade'],
         \ },
       \ 'host_prog_target': 'bin/python',
+      \ 'link': ['bin/python', 'bin/pip'],
       \ 'packages': [
         \ 'pip',
         \ 'pynvim',
         \ ],
       \ },
     \ 'python3': {
-      \ 'add_to_path': ['bin/python3', 'bin/pip3'],
       \ 'commands': {
         \ 'create': ['python3', '-m', 'venv', '.'],
         \ 'install': ['{vpath}bin/pip3', 'install'],
         \ 'update': ['{vpath}bin/pip3', 'install', '--upgrade'],
         \ },
       \ 'host_prog_target': 'bin/python3',
+      \ 'link': ['bin/python3', 'bin/pip3'],
       \ 'packages': [
         \ 'pip',
         \ 'pynvim',
@@ -69,15 +69,15 @@ function! s:get_env_path(name) abort
 endfunction
 
 
-function! s:get_bin_path() abort
+function! s:get_link_path() abort
   return g:envelop_path . '/bin'
 endfunction
 
 
-function! s:create_bin_dir() abort
-  let l:envelop_bin_path = s:get_bin_path()
-  if !isdirectory(l:envelop_bin_path)
-    call mkdir(l:envelop_bin_path, 'p')
+function! s:create_link_dir() abort
+  let l:envelop_link_path = s:get_link_path()
+  if !isdirectory(l:envelop_link_path)
+    call mkdir(l:envelop_link_path, 'p')
   endif
 endfunction
 
@@ -115,11 +115,11 @@ function! s:callback(job, code, event) abort
     call s:install_packages(l:job['name'], l:job['settings'])
   elseif l:job['action'] is# 'install'
     echo printf('Installed packages for %s', l:job['name'])
-    call s:link_bins(l:job['name'], l:job['settings'])
+    call s:create_links(l:job['name'], l:job['settings'])
   elseif l:job['action'] is# 'update'
     echo printf('Updated packages for %s', l:job['name'])
   elseif l:job['action'] is# 'link'
-    echo printf('Linked bins for %s', l:job['name'])
+    echo printf('Linked %s', l:job['name'])
   endif
   unlet s:jobs[a:job]
   if len(s:jobs) == 0
@@ -189,15 +189,15 @@ function! s:update_packages(name, settings) abort
 endfunction
 
 
-function! s:link_bins(name, settings) abort
-  if !has_key(a:settings, 'add_to_path') || !executable('ln')
+function! s:create_links(name, settings) abort
+  if !has_key(a:settings, 'link') || !executable('ln')
     return
   endif
-  call s:create_bin_dir()
-  let l:envelop_bin_path = s:get_bin_path()
-  for src in a:settings['add_to_path']
+  call s:create_link_dir()
+  let l:envelop_link_path = s:get_link_path()
+  for src in a:settings['link']
     let l:src = s:get_env_path(a:name) . '/' . src
-    let l:target = l:envelop_bin_path . '/' . split(src, '/')[-1]
+    let l:target = l:envelop_link_path . '/' . split(src, '/')[-1]
     if filereadable(l:src) && !filereadable(l:target)
       let l:job_id = jobstart(
         \ ['ln', '-s', l:src, l:target],
@@ -248,25 +248,25 @@ endfunction
 
 
 "----------------------------------- $PATH ------------------------------------"
-function! envelop#addBinsToPath() abort
-  call s:create_bin_dir()
-  let $PATH .= ':' . s:get_bin_path()
+function! envelop#AddLinksToPath() abort
+  call s:create_link_dir()
+  let $PATH .= ':' . s:get_link_path()
 endfunction
 
 
-function! envelop#LinkBins() abort
-  call s:create_bin_dir()
-  call map(s:get_envelop_envs(), 's:link_bins(v:key, v:val)')
+function! envelop#Link() abort
+  call s:create_link_dir()
+  call map(s:get_envelop_envs(), 's:create_links(v:key, v:val)')
 endfunction
 
 
-function! envelop#UnlinkBins() abort
-  let l:envelop_bin_path = g:envelop_path . '/bin'
-  call delete(l:envelop_bin_path, 'rf')
+function! envelop#Unlink() abort
+  let l:envelop_link_path = s:get_link_path()
+  call delete(l:envelop_link_path, 'rf')
 endfunction
 
 
-function! envelop#RelinkBins() abort
-  call envelop#UnlinkBins()
-  call envelop#LinkBins()
+function! envelop#Relink() abort
+  call envelop#Unlink()
+  call envelop#Link()
 endfunction
