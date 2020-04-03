@@ -6,7 +6,7 @@
 "------------------------------------------------------------------------------"
 
 "--------------------------------- Utilities ----------------------------------"
-function! envelop#GetDefaultEnvs()
+function! envelop#GetDefaultEnvs() abort
 
   " stock envs
   let l:defaults = {
@@ -64,17 +64,17 @@ function! envelop#GetDefaultEnvs()
 endfunction
 
 
-function! s:get_env_path(name)
+function! s:get_env_path(name) abort
   return g:envelop_path . '/' . a:name
 endfunction
 
 
-function! s:get_bin_path()
+function! s:get_bin_path() abort
   return g:envelop_path . '/bin'
 endfunction
 
 
-function! s:create_bin_dir()
+function! s:create_bin_dir() abort
   let l:envelop_bin_path = s:get_bin_path()
   if !isdirectory(l:envelop_bin_path)
     call mkdir(l:envelop_bin_path, 'p')
@@ -82,7 +82,7 @@ function! s:create_bin_dir()
 endfunction
 
 
-function! s:sub_paths(name, settings)
+function! s:sub_paths(name, settings) abort
   let l:dir = s:get_env_path(a:name)
   let l:settings = a:settings
   if has_key(l:settings, 'commands')
@@ -93,32 +93,32 @@ function! s:sub_paths(name, settings)
   return l:settings
 endfunction
 
-function! s:get_env_settings(name)
+function! s:get_env_settings(name) abort
   return s:sub_paths(a:name, g:envelop_envs[a:name])
 endfunction
 
 
-function! s:get_envelop_envs()
+function! s:get_envelop_envs() abort
   return map(copy(g:envelop_envs), 's:sub_paths(v:key, v:val)')
 endfunction
 
 
 let s:jobs = {}
-function! s:callback(job, code, event)
+function! s:callback(job, code, event) abort
   let l:job = s:jobs[a:job]
   if a:code > 0
     echo printf('Failed to %s %s', l:job['action'], l:job['name'])
     return
   endif
-  if l:job['action'] ==# 'create'
+  if l:job['action'] is# 'create'
     echo printf('Added %s', l:job['name'])
     call s:install_packages(l:job['name'], l:job['settings'])
-  elseif l:job['action'] ==# 'install'
+  elseif l:job['action'] is# 'install'
     echo printf('Installed packages for %s', l:job['name'])
     call s:link_bins(l:job['name'], l:job['settings'])
-  elseif l:job['action'] ==# 'update'
+  elseif l:job['action'] is# 'update'
     echo printf('Updated packages for %s', l:job['name'])
-  elseif l:job['action'] ==# 'link'
+  elseif l:job['action'] is# 'link'
     echo printf('Linked bins for %s', l:job['name'])
   endif
   unlet s:jobs[a:job]
@@ -128,7 +128,7 @@ function! s:callback(job, code, event)
 endfunction
 
 
-function! s:create_env(name, settings)
+function! s:create_env(name, settings) abort
   if has_key(a:settings, 'commands')
     \ && has_key(a:settings['commands'], 'create')
     let l:dir = s:get_env_path(a:name)
@@ -148,7 +148,7 @@ function! s:create_env(name, settings)
 endfunction
 
 
-function! s:install_packages(name, settings)
+function! s:install_packages(name, settings) abort
   if !has_key(a:settings, 'packages')
     \ || !has_key(a:settings, 'commands')
     \ || !has_key(a:settings['commands'], 'install')
@@ -168,7 +168,7 @@ function! s:install_packages(name, settings)
 endfunction
 
 
-function! s:update_packages(name, settings)
+function! s:update_packages(name, settings) abort
   let l:settings = s:get_env_settings(a:name)
   if !has_key(l:settings, 'packages')
     \ || !has_key(l:settings, 'commands')
@@ -189,7 +189,7 @@ function! s:update_packages(name, settings)
 endfunction
 
 
-function! s:link_bins(name, settings)
+function! s:link_bins(name, settings) abort
   if !has_key(a:settings, 'add_to_path') || !executable('ln')
     return
   endif
@@ -214,26 +214,26 @@ endfunction
 
 
 "------------------------------ Env Management -------------------------------"
-function! envelop#CreateEnvs()
+function! envelop#CreateEnvs() abort
   let l:envelop_envs = s:get_envelop_envs()
   call map(l:envelop_envs, 's:create_env(v:key, v:val)')
 endfunction
 
 
-function! envelop#UpdateEnvs()
+function! envelop#UpdateEnvs() abort
   let l:envelop_envs = s:get_envelop_envs()
   call map(l:envelop_envs, 's:update_packages(v:key, v:val)')
 endfunction
 
 
-function! envelop#DestroyEnvs()
+function! envelop#DestroyEnvs() abort
   call delete(g:envelop_path, 'rf')
   echo 'Destroyed envelop envs'
 endfunction
 
 
 "------------------------------ Provider Globals ------------------------------"
-function! envelop#SetHostProgGlobals()
+function! envelop#SetHostProgGlobals() abort
   for [name, settings] in items(g:envelop_envs)
     if has_key(settings, 'host_prog_target')
       let l:target_path =
@@ -248,25 +248,25 @@ endfunction
 
 
 "----------------------------------- $PATH ------------------------------------"
-function! envelop#addBinsToPath()
+function! envelop#addBinsToPath() abort
   call s:create_bin_dir()
   let $PATH .= ':' . s:get_bin_path()
 endfunction
 
 
-function! envelop#LinkBins()
+function! envelop#LinkBins() abort
   call s:create_bin_dir()
   call map(s:get_envelop_envs(), 's:link_bins(v:key, v:val)')
 endfunction
 
 
-function! envelop#UnlinkBins()
+function! envelop#UnlinkBins() abort
   let l:envelop_bin_path = g:envelop_path . '/bin'
   call delete(l:envelop_bin_path, 'rf')
 endfunction
 
 
-function! envelop#RelinkBins()
+function! envelop#RelinkBins() abort
   call envelop#UnlinkBins()
   call envelop#LinkBins()
 endfunction
