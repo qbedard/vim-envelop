@@ -16,9 +16,11 @@ let g:envelop_dir_name = get(g:, 'envelop_dir_name', 'venv')
 let g:envelop_path = get(
   \ g:, 'envelop_path', stdpath('data') . '/' . g:envelop_dir_name
   \ )
-let g:envelop_link = get(g:, 'envelop_link', 1)
 let g:envelop_envs_enabled = get(g:, 'envelop_envs_enabled', ['node', 'python3'])
 let g:envelop_envs = get(g:, 'envelop_envs', envelop#GetDefaultEnvs())
+
+let g:envelop_link = get(g:, 'envelop_link', 1)
+let g:envelop_set_host_prog = get(g:, 'envelop_set_host_prog', 1)
 
 " create env dir if needed
 if !empty(g:envelop_envs)
@@ -28,7 +30,9 @@ if !empty(g:envelop_envs)
 endif
 
 " set Neovim's '_host_program' globals
-call envelop#SetHostProgGlobals()
+if g:envelop_set_host_prog
+  call envelop#SetHostProgGlobals()
+endif
 
 " add envelop links to path
 if g:envelop_link

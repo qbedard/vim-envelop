@@ -5,54 +5,57 @@
 "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    "
 "------------------------------------------------------------------------------"
 
+"--------------------------------- Constants ----------------------------------"
+let s:default_envs = {
+  \ 'node': {
+    \ 'commands': {
+      \ 'create': ['npm', 'init', '-y'],
+      \ 'install': ['npm', 'install'],
+      \ 'update': ['npm', 'update'],
+      \ },
+    \ 'host_prog': 'node_modules/.bin/neovim-node-host',
+    \ 'packages': [
+      \ 'neovim',
+      \ ],
+    \ },
+  \ 'python': {
+    \ 'commands': {
+      \ 'create': ['virtualenv', '.'],
+      \ 'install': ['{vpath}bin/pip', 'install'],
+      \ 'update': ['{vpath}bin/pip', 'install', '--upgrade'],
+      \ },
+    \ 'host_prog': 'bin/python',
+    \ 'link': ['bin/python', 'bin/pip'],
+    \ 'packages': [
+      \ 'pip',
+      \ 'pynvim',
+      \ ],
+    \ },
+  \ 'python3': {
+    \ 'commands': {
+      \ 'create': ['python3', '-m', 'venv', '.'],
+      \ 'install': ['{vpath}bin/pip3', 'install'],
+      \ 'update': ['{vpath}bin/pip3', 'install', '--upgrade'],
+      \ },
+    \ 'host_prog': 'bin/python3',
+    \ 'link': ['bin/python3', 'bin/pip3'],
+    \ 'packages': [
+      \ 'pip',
+      \ 'pynvim',
+      \ ],
+    \ },
+  \ }
+  " \ 'perl': {},
+  " \ 'ruby': {},
+
 "--------------------------------- Utilities ----------------------------------"
+function! envelop#AddProviderEnvs() abort
+endfunction
+
+
 function! envelop#GetDefaultEnvs() abort
-
-  " stock envs
-  let l:defaults = {
-    \ 'node': {
-      \ 'commands': {
-        \ 'create': ['npm', 'init', '-y'],
-        \ 'install': ['npm', 'install'],
-        \ 'update': ['npm', 'update'],
-        \ },
-      \ 'host_prog_target': 'node_modules/.bin/neovim-node-host',
-      \ 'packages': [
-        \ 'neovim',
-        \ ],
-      \ },
-    \ 'python': {
-      \ 'commands': {
-        \ 'create': ['virtualenv', '.'],
-        \ 'install': ['{vpath}bin/pip', 'install'],
-        \ 'update': ['{vpath}bin/pip', 'install', '--upgrade'],
-        \ },
-      \ 'host_prog_target': 'bin/python',
-      \ 'link': ['bin/python', 'bin/pip'],
-      \ 'packages': [
-        \ 'pip',
-        \ 'pynvim',
-        \ ],
-      \ },
-    \ 'python3': {
-      \ 'commands': {
-        \ 'create': ['python3', '-m', 'venv', '.'],
-        \ 'install': ['{vpath}bin/pip3', 'install'],
-        \ 'update': ['{vpath}bin/pip3', 'install', '--upgrade'],
-        \ },
-      \ 'host_prog_target': 'bin/python3',
-      \ 'link': ['bin/python3', 'bin/pip3'],
-      \ 'packages': [
-        \ 'pip',
-        \ 'pynvim',
-        \ ],
-      \ },
-    \ }
-    " \ 'perl': {},
-    " \ 'ruby': {},
-
   let l:active = {}  " enabled + available = active
-  for [provider, settings] in items(l:defaults)
+  for [provider, settings] in items(s:default_envs)
     " only set defaults for providers that are installed
     if index(g:envelop_envs_enabled, provider) >= 0
       \ && executable(provider)
@@ -60,7 +63,6 @@ function! envelop#GetDefaultEnvs() abort
     endif
   endfor
   return l:active
-
 endfunction
 
 
@@ -235,9 +237,9 @@ endfunction
 "------------------------------ Provider Globals ------------------------------"
 function! envelop#SetHostProgGlobals() abort
   for [name, settings] in items(g:envelop_envs)
-    if has_key(settings, 'host_prog_target')
+    if has_key(settings, 'host_prog')
       let l:target_path =
-        \ s:get_env_path(name) . '/' . settings['host_prog_target']
+        \ s:get_env_path(name) . '/' . settings['host_prog']
       if filereadable(l:target_path)
         let l:host_prog_var = name . '_host_prog'
         let g:[l:host_prog_var] = l:target_path
