@@ -49,10 +49,6 @@ let s:default_envs = {
   " \ 'ruby': {},
 
 "--------------------------------- Utilities ----------------------------------"
-function! envelop#AddProviderEnvs() abort
-endfunction
-
-
 function! envelop#GetDefaultEnvs() abort
   let l:active = {}  " enabled + available = active
   for [provider, settings] in items(s:default_envs)
