@@ -1,107 +1,14 @@
 " envelop/autoload/envelop.vim
 "------------------------------------------------------------------------------"
 "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    "
-"                                   envelop                                    "
+"                                 vim-envelop                                  "
 "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    "
 "------------------------------------------------------------------------------"
 
-"--------------------------------- Constants ----------------------------------"
-let s:default_envs = {
-  \ 'node': {
-    \ 'commands': {
-      \ 'create': ['npm', 'init', '-y'],
-      \ 'install': ['npm', 'install'],
-      \ 'update': ['npm', 'update'],
-      \ },
-    \ 'host_prog': 'node_modules/.bin/neovim-node-host',
-    \ 'packages': [
-      \ 'neovim',
-      \ ],
-    \ },
-  \ 'python': {
-    \ 'commands': {
-      \ 'create': ['virtualenv', '.'],
-      \ 'install': ['{vpath}bin/pip', 'install'],
-      \ 'update': ['{vpath}bin/pip', 'install', '--upgrade'],
-      \ },
-    \ 'host_prog': 'bin/python',
-    \ 'link': ['bin/python', 'bin/pip'],
-    \ 'packages': [
-      \ 'pip',
-      \ 'pynvim',
-      \ ],
-    \ },
-  \ 'python3': {
-    \ 'commands': {
-      \ 'create': ['python3', '-m', 'venv', '.'],
-      \ 'install': ['{vpath}bin/pip3', 'install'],
-      \ 'update': ['{vpath}bin/pip3', 'install', '--upgrade'],
-      \ },
-    \ 'host_prog': 'bin/python3',
-    \ 'link': ['bin/python3', 'bin/pip3'],
-    \ 'packages': [
-      \ 'pip',
-      \ 'pynvim',
-      \ ],
-    \ },
-  \ }
-  " \ 'perl': {},
-  " \ 'ruby': {},
-
-"--------------------------------- Utilities ----------------------------------"
-function! envelop#GetDefaultEnvs() abort
-  let l:active = {}  " enabled + available = active
-  for [provider, settings] in items(s:default_envs)
-    " only set defaults for providers that are installed
-    if index(g:envelop_envs_enabled, provider) >= 0
-      \ && executable(provider)
-      let l:active[provider] = settings
-    endif
-  endfor
-  return l:active
-endfunction
-
-
-function! envelop#GetEnvPath(name) abort
-  return g:envelop_path . '/' . a:name
-endfunction
-
-
-function! envelop#GetLinkPath() abort
-  return g:envelop_path . '/bin'
-endfunction
-
-
-function! envelop#CreateLinkDir() abort
-  let l:envelop_link_path = envelop#GetLinkPath()
-  if !isdirectory(l:envelop_link_path)
-    call mkdir(l:envelop_link_path, 'p')
-  endif
-endfunction
-
-
-function! envelop#SubPaths(name, settings) abort
-  let l:dir = envelop#GetEnvPath(a:name)
-  let l:settings = a:settings
-  if has_key(l:settings, 'commands')
-    for cmd in values(l:settings['commands'])
-      call map(cmd, "substitute(v:val, '{vpath}', l:dir . '/', 'g')")
-    endfor
-  endif
-  return l:settings
-endfunction
-
-function! envelop#GetEnvSettings(name) abort
-  return envelop#SubPaths(a:name, g:envelop_envs[a:name])
-endfunction
-
-
-function! envelop#GetEnvelopEnvs() abort
-  return map(copy(g:envelop_envs), 'envelop#SubPaths(v:key, v:val)')
-endfunction
-
-
+"------------------------------------ Jobs ------------------------------------"
 let s:jobs = {}
+
+
 function! envelop#Callback(job, code, event) abort
   let l:job = s:jobs[a:job]
   if a:code > 0
@@ -126,69 +33,51 @@ function! envelop#Callback(job, code, event) abort
 endfunction
 
 
-function! envelop#CreateEnv(name, settings) abort
-  if has_key(a:settings, 'commands')
-    \ && has_key(a:settings['commands'], 'create')
-    let l:dir = envelop#GetEnvPath(a:name)
-    if !isdirectory(l:dir)
-      call mkdir(l:dir, 'p')
-    endif
-    let l:job_id = jobstart(
-      \ a:settings['commands']['create'],
-      \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')},
-      \ )
-    let s:jobs[l:job_id] = {
-      \ 'action': 'create',
-      \ 'name': a:name,
-      \ 'settings': a:settings,
-      \ }
+"--------------------------------- Variables ----------------------------------"
+function! envelop#Set(variable_name, default) abort
+  let l:full_name = 'envelop_' . a:variable_name
+  if !has_key(g:, l:full_name)
+    let g:[l:full_name] = a:default
+  endif
+  return g:[l:full_name]
+endfunction
+
+
+function! envelop#Var(variable_name) abort
+    let l:full_name = 'envelop_' . a:variable_name
+    return g:[l:full_name]
+endfunction
+
+
+"----------------------------------- Paths ------------------------------------"
+function! envelop#CreateEnvelopDir() abort
+  if !isdirectory(g:envelop_path)
+    call mkdir(g:envelop_path, 'p')
   endif
 endfunction
 
 
-function! envelop#InstallPackages(name, settings) abort
-  if !has_key(a:settings, 'packages')
-    \ || !has_key(a:settings, 'commands')
-    \ || !has_key(a:settings['commands'], 'install')
-    return
-  endif
-  let l:cmd = a:settings['commands']['install'] + a:settings['packages']
-  let l:dir = envelop#GetEnvPath(a:name)
-  let l:job_id = jobstart(
-    \ l:cmd,
-    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
-    \ )
-  let s:jobs[l:job_id] = {
-    \ 'action': 'install',
-    \ 'name': a:name,
-    \ 'settings': a:settings,
-    \ }
+function! envelop#GetEnvPath(name) abort
+  return g:envelop_path . '/' . a:name
 endfunction
 
 
-function! envelop#UpdatePackages(name, settings) abort
-  let l:settings = envelop#GetEnvSettings(a:name)
-  if !has_key(l:settings, 'packages')
-    \ || !has_key(l:settings, 'commands')
-    \ || !has_key(l:settings['commands'], 'update')
-    return
+function! envelop#GetLinkPath() abort
+  return g:envelop_path . '/bin'
+endfunction
+
+
+function! envelop#CreateLinkDir() abort
+  let l:envelop_link_path = envelop#GetLinkPath()
+  if !isdirectory(l:envelop_link_path)
+    call mkdir(l:envelop_link_path, 'p')
   endif
-  let l:cmd = l:settings['commands']['update'] + l:settings['packages']
-  let l:dir = envelop#GetEnvPath(a:name)
-  let l:job_id = jobstart(
-    \ l:cmd,
-    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
-    \ )
-  let s:jobs[l:job_id] = {
-    \ 'action': 'update',
-    \ 'name': a:name,
-    \ 'settings': a:settings,
-    \ }
 endfunction
 
 
 function! envelop#CreateLinks(name, settings) abort
   if !has_key(a:settings, 'link') || !executable('ln')
+    " TODO: error here?
     return
   endif
   call envelop#CreateLinkDir()
@@ -211,41 +100,6 @@ function! envelop#CreateLinks(name, settings) abort
 endfunction
 
 
-"------------------------------ Env Management -------------------------------"
-function! envelop#CreateEnvs() abort
-  let l:envelop_envs = envelop#GetEnvelopEnvs()
-  call map(l:envelop_envs, 'envelop#CreateEnv(v:key, v:val)')
-endfunction
-
-
-function! envelop#UpdateEnvs() abort
-  let l:envelop_envs = envelop#GetEnvelopEnvs()
-  call map(l:envelop_envs, 'envelop#UpdatePackages(v:key, v:val)')
-endfunction
-
-
-function! envelop#DestroyEnvs() abort
-  call delete(g:envelop_path, 'rf')
-  echo 'Destroyed envelop envs'
-endfunction
-
-
-"------------------------------ Provider Globals ------------------------------"
-function! envelop#SetHostProgGlobals() abort
-  for [name, settings] in items(g:envelop_envs)
-    if has_key(settings, 'host_prog')
-      let l:target_path =
-        \ envelop#GetEnvPath(name) . '/' . settings['host_prog']
-      if filereadable(l:target_path)
-        let l:host_prog_var = name . '_host_prog'
-        let g:[l:host_prog_var] = l:target_path
-      endif
-    endif
-  endfor
-endfunction
-
-
-"----------------------------------- $PATH ------------------------------------"
 function! envelop#AddLinksToPath() abort
   call envelop#CreateLinkDir()
   let $PATH .= ':' . envelop#GetLinkPath()
@@ -267,4 +121,107 @@ endfunction
 function! envelop#Relink() abort
   call envelop#Unlink()
   call envelop#Link()
+endfunction
+
+
+"------------------------------------ Envs ------------------------------------"
+function! envelop#AddEnv(name, definition) abort
+  if !has_key(g:envelop_envs, a:name)
+    let g:envelop_envs[a:name] = a:definition
+  else
+    " TODO: error?
+  endif
+endfunction
+
+
+function! envelop#GetEnv(name) abort
+  return g:envelop_envs[a:name]
+endfunction
+
+
+function! envelop#UpdateEnvs(definitions) abort
+  call extend(envelop#Var('envs'), a:definitions)
+endfunction
+
+
+function! envelop#LoadEnv(name) abort
+  execute 'silent! runtime! envelop_envs/' . a:name . '.vim'
+endfunction
+
+
+function! envelop#CreateEnv(name, settings) abort
+  call envelop#CreateEnvelopDir()
+  if has_key(a:settings, 'commands')
+    \ && has_key(a:settings['commands'], 'create')
+    let l:dir = envelop#GetEnvPath(a:name)
+    if !isdirectory(l:dir)
+      call mkdir(l:dir, 'p')
+    endif
+    let l:Cmd = a:settings['commands']['create']
+    let l:job_id = jobstart(
+      \ type(l:Cmd) is v:t_func ? l:Cmd() : l:Cmd,
+      \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')},
+      \ )
+    let s:jobs[l:job_id] = {
+      \ 'action': 'create',
+      \ 'name': a:name,
+      \ 'settings': a:settings,
+      \ }
+  endif
+endfunction
+
+
+function! envelop#InstallPackages(name, settings) abort
+  if !has_key(a:settings, 'commands')
+    \ || !has_key(a:settings['commands'], 'install')
+    return
+  endif
+  let l:dir = envelop#GetEnvPath(a:name)
+  let l:Cmd = a:settings['commands']['install']
+  let l:job_id = jobstart(
+      \ type(l:Cmd) is v:t_func ? l:Cmd() : l:Cmd,
+    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
+    \ )
+  let s:jobs[l:job_id] = {
+    \ 'action': 'install',
+    \ 'name': a:name,
+    \ 'settings': a:settings,
+    \ }
+endfunction
+
+
+function! envelop#UpdatePackages(name, settings) abort
+  let l:settings = envelop#GetEnv(a:name)
+  if !has_key(l:settings, 'commands')
+    \ || !has_key(l:settings['commands'], 'update')
+    return
+  endif
+  let l:dir = envelop#GetEnvPath(a:name)
+  let l:cmd = l:settings['commands']['update']
+  let l:job_id = jobstart(
+    \ type(l:cmd) is v:t_func ? l:cmd() : l:cmd,
+    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
+    \ )
+  let s:jobs[l:job_id] = {
+    \ 'action': 'update',
+    \ 'name': a:name,
+    \ 'settings': a:settings,
+    \ }
+endfunction
+
+
+"------------------------------ Env Management -------------------------------"
+function! envelop#CreateEnvs() abort
+  call map(g:envelop_envs, 'envelop#CreateEnv(v:key, v:val)')
+endfunction
+
+
+function! envelop#UpdateEnvs() abort
+  call map(g:envelop_envs, 'envelop#UpdatePackages(v:key, v:val)')
+endfunction
+
+
+function! envelop#DestroyEnvs() abort
+  call delete(g:envelop_path, 'rf')
+  echo 'Destroyed envelop envs'
 endfunction
