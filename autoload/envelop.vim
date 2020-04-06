@@ -62,26 +62,26 @@ function! envelop#GetDefaultEnvs() abort
 endfunction
 
 
-function! s:get_env_path(name) abort
+function! envelop#GetEnvPath(name) abort
   return g:envelop_path . '/' . a:name
 endfunction
 
 
-function! s:get_link_path() abort
+function! envelop#GetLinkPath() abort
   return g:envelop_path . '/bin'
 endfunction
 
 
-function! s:create_link_dir() abort
-  let l:envelop_link_path = s:get_link_path()
+function! envelop#CreateLinkDir() abort
+  let l:envelop_link_path = envelop#GetLinkPath()
   if !isdirectory(l:envelop_link_path)
     call mkdir(l:envelop_link_path, 'p')
   endif
 endfunction
 
 
-function! s:sub_paths(name, settings) abort
-  let l:dir = s:get_env_path(a:name)
+function! envelop#SubPaths(name, settings) abort
+  let l:dir = envelop#GetEnvPath(a:name)
   let l:settings = a:settings
   if has_key(l:settings, 'commands')
     for cmd in values(l:settings['commands'])
@@ -91,18 +91,18 @@ function! s:sub_paths(name, settings) abort
   return l:settings
 endfunction
 
-function! s:get_env_settings(name) abort
-  return s:sub_paths(a:name, g:envelop_envs[a:name])
+function! envelop#GetEnvSettings(name) abort
+  return envelop#SubPaths(a:name, g:envelop_envs[a:name])
 endfunction
 
 
-function! s:get_envelop_envs() abort
-  return map(copy(g:envelop_envs), 's:sub_paths(v:key, v:val)')
+function! envelop#GetEnvelopEnvs() abort
+  return map(copy(g:envelop_envs), 'envelop#SubPaths(v:key, v:val)')
 endfunction
 
 
 let s:jobs = {}
-function! s:callback(job, code, event) abort
+function! envelop#Callback(job, code, event) abort
   let l:job = s:jobs[a:job]
   if a:code > 0
     echo printf('Failed to %s %s', l:job['action'], l:job['name'])
@@ -110,10 +110,10 @@ function! s:callback(job, code, event) abort
   endif
   if l:job['action'] is# 'create'
     echo printf('Added %s', l:job['name'])
-    call s:install_packages(l:job['name'], l:job['settings'])
+    call envelop#InstallPackages(l:job['name'], l:job['settings'])
   elseif l:job['action'] is# 'install'
     echo printf('Installed packages for %s', l:job['name'])
-    call s:create_links(l:job['name'], l:job['settings'])
+    call envelop#CreateLinks(l:job['name'], l:job['settings'])
   elseif l:job['action'] is# 'update'
     echo printf('Updated packages for %s', l:job['name'])
   elseif l:job['action'] is# 'link'
@@ -126,16 +126,16 @@ function! s:callback(job, code, event) abort
 endfunction
 
 
-function! s:create_env(name, settings) abort
+function! envelop#CreateEnv(name, settings) abort
   if has_key(a:settings, 'commands')
     \ && has_key(a:settings['commands'], 'create')
-    let l:dir = s:get_env_path(a:name)
+    let l:dir = envelop#GetEnvPath(a:name)
     if !isdirectory(l:dir)
       call mkdir(l:dir, 'p')
     endif
     let l:job_id = jobstart(
       \ a:settings['commands']['create'],
-      \ {'cwd': l:dir, 'on_exit': function('s:callback')},
+      \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')},
       \ )
     let s:jobs[l:job_id] = {
       \ 'action': 'create',
@@ -146,17 +146,17 @@ function! s:create_env(name, settings) abort
 endfunction
 
 
-function! s:install_packages(name, settings) abort
+function! envelop#InstallPackages(name, settings) abort
   if !has_key(a:settings, 'packages')
     \ || !has_key(a:settings, 'commands')
     \ || !has_key(a:settings['commands'], 'install')
     return
   endif
   let l:cmd = a:settings['commands']['install'] + a:settings['packages']
-  let l:dir = s:get_env_path(a:name)
+  let l:dir = envelop#GetEnvPath(a:name)
   let l:job_id = jobstart(
     \ l:cmd,
-    \ {'cwd': l:dir, 'on_exit': function('s:callback')}
+    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
     \ )
   let s:jobs[l:job_id] = {
     \ 'action': 'install',
@@ -166,18 +166,18 @@ function! s:install_packages(name, settings) abort
 endfunction
 
 
-function! s:update_packages(name, settings) abort
-  let l:settings = s:get_env_settings(a:name)
+function! envelop#UpdatePackages(name, settings) abort
+  let l:settings = envelop#GetEnvSettings(a:name)
   if !has_key(l:settings, 'packages')
     \ || !has_key(l:settings, 'commands')
     \ || !has_key(l:settings['commands'], 'update')
     return
   endif
   let l:cmd = l:settings['commands']['update'] + l:settings['packages']
-  let l:dir = s:get_env_path(a:name)
+  let l:dir = envelop#GetEnvPath(a:name)
   let l:job_id = jobstart(
     \ l:cmd,
-    \ {'cwd': l:dir, 'on_exit': function('s:callback')}
+    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
     \ )
   let s:jobs[l:job_id] = {
     \ 'action': 'update',
@@ -187,19 +187,19 @@ function! s:update_packages(name, settings) abort
 endfunction
 
 
-function! s:create_links(name, settings) abort
+function! envelop#CreateLinks(name, settings) abort
   if !has_key(a:settings, 'link') || !executable('ln')
     return
   endif
-  call s:create_link_dir()
-  let l:envelop_link_path = s:get_link_path()
+  call envelop#CreateLinkDir()
+  let l:envelop_link_path = envelop#GetLinkPath()
   for src in a:settings['link']
-    let l:src = s:get_env_path(a:name) . '/' . src
+    let l:src = envelop#GetEnvPath(a:name) . '/' . src
     let l:target = l:envelop_link_path . '/' . split(src, '/')[-1]
     if filereadable(l:src) && !filereadable(l:target)
       let l:job_id = jobstart(
         \ ['ln', '-s', l:src, l:target],
-        \ {'on_exit': function('s:callback')}
+        \ {'on_exit': function('envelop#Callback')}
         \ )
       let s:jobs[l:job_id] = {
         \ 'action': 'link',
@@ -213,14 +213,14 @@ endfunction
 
 "------------------------------ Env Management -------------------------------"
 function! envelop#CreateEnvs() abort
-  let l:envelop_envs = s:get_envelop_envs()
-  call map(l:envelop_envs, 's:create_env(v:key, v:val)')
+  let l:envelop_envs = envelop#GetEnvelopEnvs()
+  call map(l:envelop_envs, 'envelop#CreateEnv(v:key, v:val)')
 endfunction
 
 
 function! envelop#UpdateEnvs() abort
-  let l:envelop_envs = s:get_envelop_envs()
-  call map(l:envelop_envs, 's:update_packages(v:key, v:val)')
+  let l:envelop_envs = envelop#GetEnvelopEnvs()
+  call map(l:envelop_envs, 'envelop#UpdatePackages(v:key, v:val)')
 endfunction
 
 
@@ -235,7 +235,7 @@ function! envelop#SetHostProgGlobals() abort
   for [name, settings] in items(g:envelop_envs)
     if has_key(settings, 'host_prog')
       let l:target_path =
-        \ s:get_env_path(name) . '/' . settings['host_prog']
+        \ envelop#GetEnvPath(name) . '/' . settings['host_prog']
       if filereadable(l:target_path)
         let l:host_prog_var = name . '_host_prog'
         let g:[l:host_prog_var] = l:target_path
@@ -247,19 +247,19 @@ endfunction
 
 "----------------------------------- $PATH ------------------------------------"
 function! envelop#AddLinksToPath() abort
-  call s:create_link_dir()
-  let $PATH .= ':' . s:get_link_path()
+  call envelop#CreateLinkDir()
+  let $PATH .= ':' . envelop#GetLinkPath()
 endfunction
 
 
 function! envelop#Link() abort
-  call s:create_link_dir()
-  call map(s:get_envelop_envs(), 's:create_links(v:key, v:val)')
+  call envelop#CreateLinkDir()
+  call map(envelop#GetEnvelopEnvs(), 'envelop#CreateLinks(v:key, v:val)')
 endfunction
 
 
 function! envelop#Unlink() abort
-  let l:envelop_link_path = s:get_link_path()
+  let l:envelop_link_path = envelop#GetLinkPath()
   call delete(l:envelop_link_path, 'rf')
 endfunction
 
