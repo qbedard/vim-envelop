@@ -134,13 +134,14 @@ function! envelop#AddEnv(name, definition) abort
 endfunction
 
 
+" TODO: Rename?
+" function! envelop#UpdateEnvs(definitions) abort
+"   call extend(envelop#Var('envs'), a:definitions)
+" endfunction
+
+
 function! envelop#GetEnv(name) abort
   return g:envelop_envs[a:name]
-endfunction
-
-
-function! envelop#UpdateEnvs(definitions) abort
-  call extend(envelop#Var('envs'), a:definitions)
 endfunction
 
 
@@ -197,9 +198,9 @@ function! envelop#UpdatePackages(name, settings) abort
     return
   endif
   let l:dir = envelop#GetEnvPath(a:name)
-  let l:cmd = l:settings['commands']['update']
+  let l:Cmd = l:settings['commands']['update']
   let l:job_id = jobstart(
-    \ type(l:cmd) is v:t_func ? l:cmd() : l:cmd,
+    \ type(l:Cmd) is v:t_func ? l:Cmd() : l:Cmd,
     \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
     \ )
   let s:jobs[l:job_id] = {
