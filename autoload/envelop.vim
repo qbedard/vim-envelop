@@ -62,8 +62,13 @@ function! envelop#GetEnvPath(name) abort
 endfunction
 
 
-function! envelop#GetLinkPath() abort
-  return g:envelop_path . '/bin'
+function! envelop#GetLinkPath(...) abort
+  let l:name = get(a:, 1, '')
+  let l:path = g:envelop_path . '/bin'
+  if len(l:name)
+    let l:path = l:path . '/' . l:name
+  endif
+  return l:path
 endfunction
 
 
