@@ -66,7 +66,7 @@ function! envelop#GetLinkPath(...) abort
   let l:name = get(a:, 1, '')
   let l:path = g:envelop_path . '/bin'
   if len(l:name)
-    let l:path = l:path . '/' . l:name
+    let l:path .= '/' . l:name
   endif
   return l:path
 endfunction
@@ -86,10 +86,9 @@ function! envelop#CreateLinks(name, settings) abort
     return
   endif
   call envelop#CreateLinkDir()
-  let l:envelop_link_path = envelop#GetLinkPath()
   for src in a:settings['link']
     let l:src = envelop#GetEnvPath(a:name) . '/' . src
-    let l:target = l:envelop_link_path . '/' . split(src, '/')[-1]
+    let l:target = envelop#GetLinkPath(split(src, '/')[-1])
     if filereadable(l:src) && !filereadable(l:target)
       let l:job_id = jobstart(
         \ ['ln', '-s', l:src, l:target],
@@ -113,7 +112,7 @@ endfunction
 
 function! envelop#Link() abort
   call envelop#CreateLinkDir()
-  call map(envelop#GetEnvelopEnvs(), 'envelop#CreateLinks(v:key, v:val)')
+  call map(copy(g:envelop_envs), 'envelop#CreateLinks(v:key, v:val)')
 endfunction
 
 
@@ -197,13 +196,12 @@ endfunction
 
 
 function! envelop#UpdatePackages(name, settings) abort
-  let l:settings = envelop#GetEnv(a:name)
-  if !has_key(l:settings, 'commands')
-    \ || !has_key(l:settings['commands'], 'update')
+  if !has_key(a:settings, 'commands')
+    \ || !has_key(a:settings['commands'], 'update')
     return
   endif
   let l:dir = envelop#GetEnvPath(a:name)
-  let l:Cmd = l:settings['commands']['update']
+  let l:Cmd = a:settings['commands']['update']
   let l:job_id = jobstart(
     \ type(l:Cmd) is v:t_func ? l:Cmd() : l:Cmd,
     \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')}
@@ -218,12 +216,17 @@ endfunction
 
 "------------------------------ Env Management -------------------------------"
 function! envelop#CreateEnvs() abort
-  call map(g:envelop_envs, 'envelop#CreateEnv(v:key, v:val)')
+  call map(copy(g:envelop_envs), 'envelop#CreateEnv(v:key, v:val)')
+endfunction
+
+
+function! envelop#InstallEnvPackages() abort
+  call map(copy(g:envelop_envs), 'envelop#InstallPackages(v:key, v:val)')
 endfunction
 
 
 function! envelop#UpdateEnvs() abort
-  call map(g:envelop_envs, 'envelop#UpdatePackages(v:key, v:val)')
+  call map(copy(g:envelop_envs), 'envelop#UpdatePackages(v:key, v:val)')
 endfunction
 
 

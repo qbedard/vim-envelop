@@ -41,6 +41,7 @@ endif
 "---------------------------------- Commands ----------------------------------"
 " env commands
 command! EnvCreate call envelop#CreateEnvs()
+command! EnvInstall call envelop#InstallEnvPackages()
 command! EnvUpdate call envelop#UpdateEnvs()
 command! EnvDestroy call envelop#DestroyEnvs()
 
