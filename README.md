@@ -1,4 +1,4 @@
-# envelop
+# envelop ![Tests](https://github.com/timbedard/vim-envelop/workflows/Test/badge.svg)
 
 ## About
 
