@@ -18,7 +18,8 @@ Using [**vim-plug**](https://github.com/junegunn/vim-plug):
 
 ### Virtual Environment Management
 
-- `EnvCreate` Create all environments.
+- `EnvCreate` Create all environments (including package installation and linking).
+- `EnvInstall` Install packagess for all environments.
 - `EnvUpdate`  Update packages in environments.
 - `EnvDestroy` Destroy all environments (and binary links).
 
