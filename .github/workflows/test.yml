@@ -1,15 +1,16 @@
-name: Lint
+name: Test
 
 on:
   pull_request:
   push:
-    branches: 
+    branches:
       - master
 
 jobs:
   test:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 3
 
     steps:
     - uses: actions/checkout@v2
@@ -23,7 +24,7 @@ jobs:
         git clone https://github.com/junegunn/vader.vim.git
     - name: Run tests
       run: |
-        vim -Nu <(cat << VIMRC
+        nvim -Nu <(cat << VIMRC
         filetype off
         set rtp+=vader.vim
         set rtp+=.
