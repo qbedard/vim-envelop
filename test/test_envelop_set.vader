@@ -1,0 +1,11 @@
+After:
+  unlet g:envelop_test_var
+
+Execute (Return default value):
+  AssertEqual 2, envelop#Set('test_var', 2)
+Then (Set default value):
+  AssertEqual 2, g:envelop_test_var
+
+Execute (Return previously set value):
+  let g:envelop_test_var = 3
+  AssertEqual 3, envelop#Set('test_var', 2)

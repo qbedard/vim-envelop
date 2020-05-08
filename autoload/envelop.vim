@@ -34,6 +34,7 @@ endfunction
 
 
 "--------------------------------- Variables ----------------------------------"
+" TODO: Combine Set() and Var()?
 function! envelop#Set(variable_name, default) abort
   let l:full_name = 'envelop_' . a:variable_name
   if !has_key(g:, l:full_name)
@@ -50,13 +51,6 @@ endfunction
 
 
 "----------------------------------- Paths ------------------------------------"
-function! envelop#CreateEnvelopDir() abort
-  if !isdirectory(g:envelop_path)
-    call mkdir(g:envelop_path, 'p')
-  endif
-endfunction
-
-
 function! envelop#GetEnvPath(name) abort
   return g:envelop_path . '/' . a:name
 endfunction
@@ -69,6 +63,13 @@ function! envelop#GetLinkPath(...) abort
     let l:path .= '/' . l:name
   endif
   return l:path
+endfunction
+
+
+function! envelop#CreateEnvelopDir() abort
+  if !isdirectory(g:envelop_path)
+    call mkdir(g:envelop_path, 'p')
+  endif
 endfunction
 
 

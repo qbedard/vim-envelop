@@ -1,0 +1,5 @@
+Before:
+  let g:envelop_path = 'test_path'
+
+Execute (Return current value):
+  AssertEqual 'test_path/test_env', envelop#GetEnvPath('test_env')

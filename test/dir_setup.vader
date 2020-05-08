@@ -1,0 +1,3 @@
+Execute:
+  let g:envelop_test_dir = expand('$PWD/.envelop_test_dir')
+  call mkdir(g:envelop_test_dir, 'p')

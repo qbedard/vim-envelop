@@ -1,0 +1,6 @@
+After:
+  unlet g:envelop_test_var
+
+Execute (Return current value):
+  let g:envelop_test_var = 2
+  AssertEqual 2, envelop#Var('test_var')

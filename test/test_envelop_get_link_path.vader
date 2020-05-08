@@ -1,0 +1,8 @@
+Before:
+  let g:envelop_path = 'test_path'
+
+Execute (Return base link path when called with no args):
+  AssertEqual 'test_path/bin', envelop#GetLinkPath()
+
+Execute (Return path to link target when called with name):
+  AssertEqual 'test_path/bin/test_link', envelop#GetLinkPath('test_link')
