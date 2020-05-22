@@ -1,2 +1,2 @@
-Execute:
+Execute (Remove temporary test directory):
   call delete(g:envelop_test_dir, 'rf')

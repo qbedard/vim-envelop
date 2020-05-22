@@ -1,0 +1,10 @@
+Include: dir_setup.vader
+Include (Remove setup helper's dir before testing creation): dir_teardown.vader
+
+Execute (Create envelop directory):
+  call envelop#CreateEnvelopDir()
+  Assert isdirectory(g:envelop_path)
+Then (Attempt to create existing envelop directory):
+  call envelop#CreateEnvelopDir()
+
+Include: dir_teardown.vader

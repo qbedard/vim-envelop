@@ -1,3 +1,4 @@
-Execute:
+Execute (Setup temporary test directory):
   let g:envelop_test_dir = expand('$PWD/.envelop_test_dir')
+  let g:envelop_path = g:envelop_test_dir
   call mkdir(g:envelop_test_dir, 'p')
