@@ -13,9 +13,7 @@ function! envelop#Callback(job, code, event) abort
   let l:job = s:jobs[a:job]
   if a:code > 0
     echo printf('Failed to %s %s', l:job['action'], l:job['name'])
-    return
-  endif
-  if l:job['action'] is# 'create'
+  elseif l:job['action'] is# 'create'
     echo printf('Added %s', l:job['name'])
     call envelop#InstallPackages(l:job['name'], l:job['settings'])
   elseif l:job['action'] is# 'install'
@@ -157,23 +155,24 @@ endfunction
 
 function! envelop#CreateEnv(name, settings) abort
   call envelop#CreateEnvelopDir()
-  if has_key(a:settings, 'commands')
-    \ && has_key(a:settings['commands'], 'create')
-    let l:dir = envelop#GetEnvPath(a:name)
-    if !isdirectory(l:dir)
-      call mkdir(l:dir, 'p')
-    endif
-    let l:Cmd = a:settings['commands']['create']
-    let l:job_id = jobstart(
-      \ type(l:Cmd) is v:t_func ? l:Cmd() : l:Cmd,
-      \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')},
-      \ )
-    let s:jobs[l:job_id] = {
-      \ 'action': 'create',
-      \ 'name': a:name,
-      \ 'settings': a:settings,
-      \ }
+  if !has_key(a:settings, 'commands')
+    \ || !has_key(a:settings['commands'], 'create')
+    return
   endif
+  let l:dir = envelop#GetEnvPath(a:name)
+  if !isdirectory(l:dir)
+    call mkdir(l:dir, 'p')
+  endif
+  let l:Cmd = a:settings['commands']['create']
+  let l:job_id = jobstart(
+    \ type(l:Cmd) is v:t_func ? l:Cmd() : l:Cmd,
+    \ {'cwd': l:dir, 'on_exit': function('envelop#Callback')},
+    \ )
+  let s:jobs[l:job_id] = {
+    \ 'action': 'create',
+    \ 'name': a:name,
+    \ 'settings': a:settings,
+    \ }
 endfunction
 
 
