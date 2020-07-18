@@ -16,7 +16,8 @@ let s:luarocks_cmd = [
   \ ' --lua-version', envelop#Var('lua_version'),
   \ '--server', envelop#Var('lua_server'),
   \ ]
-let s:luarocks_install_cmd =
+
+let s:luarocks_create_cmd =
   \ join(s:luarocks_cmd, ' ') .
   \ ' init' .
   \ ' && luarocks-admin make_manifest --local-tree'
@@ -33,7 +34,7 @@ endfunction
 
 call envelop#AddEnv('lua', {
   \ 'commands': {
-    \ 'create': s:luarocks_install_cmd,
+    \ 'create': s:luarocks_create_cmd,
     \ 'install': function('envelop_envs#lua#Install'),
     \ 'update': function('envelop_envs#lua#Install'),
     \ },
