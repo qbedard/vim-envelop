@@ -105,7 +105,7 @@ endfunction
 
 function! envelop#AddLinksToPath() abort
   call envelop#CreateLinkDir()
-  let $PATH .= ':' . envelop#GetLinkPath()
+  let $PATH = envelop#GetLinkPath() . expand(':$PATH')
 endfunction
 
 
