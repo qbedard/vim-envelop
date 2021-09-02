@@ -1,7 +1,7 @@
 call envelop#Set('lua_packages', [])
 call envelop#Set('lua_server', 'http://luarocks.org/dev')
 call envelop#Set('lua_set_lua_path', 1)
-call envelop#Set('lua_version', '5.1')
+call envelop#Set('lua_version', '5.4')
 let s:link = envelop#Set('lua_link', [])
 
 let s:env_path = envelop#GetEnvPath('lua')
