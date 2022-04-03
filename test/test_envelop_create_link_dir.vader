@@ -1,0 +1,9 @@
+Include: dir_setup.vader
+
+Execute (Create link directory):
+  call envelop#CreateLinkDir()
+  Assert isdirectory(g:envelop_path . '/bin')
+Then (Attempt to create existing link directory):
+  call envelop#CreateLinkDir()
+
+Include: dir_teardown.vader
